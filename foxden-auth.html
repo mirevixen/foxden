@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fox Den — Twitch Connect</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Crimson+Pro:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0a08;--bg-card:#1e1710;--amber:#c8832a;--amber-b:#e8a84a;
+  --teal:#3a9e8f;--teal-b:#5ecfbe;--crimson-b:#c94040;
+  --text:#e8d9c0;--text-d:#9a8570;--border:rgba(200,131,42,0.25);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',Georgia,serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.box{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:40px;max-width:500px;width:100%;text-align:center}
+.fox{font-size:48px;margin-bottom:16px}
+.title{font-family:'Cinzel Decorative',serif;font-size:20px;color:var(--amber-b);letter-spacing:2px;margin-bottom:8px}
+.sub{font-size:15px;color:var(--text-d);font-style:italic;margin-bottom:28px;line-height:1.5}
+.connect-btn{display:inline-block;background:rgba(145,70,255,0.15);border:1px solid #9146ff;color:#bf94ff;padding:12px 28px;font-family:'Cinzel Decorative',serif;font-size:11px;cursor:pointer;border-radius:4px;letter-spacing:2px;transition:all 0.2s;text-decoration:none;margin-bottom:20px}
+.connect-btn:hover{background:rgba(145,70,255,0.28)}
+.status{font-size:14px;font-style:italic;color:var(--text-d);min-height:24px;margin-bottom:12px}
+.status.ok{color:var(--teal-b)}
+.status.err{color:var(--crimson-b)}
+.result-box{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:16px;margin-top:16px;text-align:left;display:none}
+.result-title{font-family:'Cinzel Decorative',serif;font-size:10px;color:var(--amber);letter-spacing:2px;margin-bottom:8px}
+.result-row{font-size:13px;color:var(--text-d);margin-bottom:4px}
+.result-row span{color:var(--teal-b)}
+.sub-list{margin-top:8px}
+.sub-item{font-size:12px;padding:3px 0;border-bottom:1px solid rgba(200,131,42,0.08);display:flex;justify-content:space-between}
+.sub-ok{color:var(--teal-b)}.sub-err{color:var(--crimson-b)}
+.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
+.note{font-size:13px;color:var(--text-d);font-style:italic;line-height:1.6}
+.cfg-row{display:flex;gap:8px;margin-bottom:10px;align-items:center;text-align:left}
+.cfg-label{font-size:13px;color:var(--text-d);min-width:100px}
+.cfg-input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;font-family:'Crimson Pro',serif;font-size:14px;border-radius:2px}
+.cfg-input:focus{outline:none;border-color:var(--amber)}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="fox">🦊</div>
+  <div class="title">Connect to Twitch</div>
+  <div class="sub">Link your Twitch channel so the Fox Den can automatically detect follows, subs, raids and more.</div>
+
+  <div class="cfg-row">
+    <span class="cfg-label">Client ID</span>
+    <input type="text" class="cfg-input" id="clientId" placeholder="From dev.twitch.tv…">
+  </div>
+
+  <button class="connect-btn" onclick="startAuth()">🟣 CONNECT TWITCH</button>
+
+  <div class="status" id="status">Enter your Client ID above then click connect.</div>
+
+  <div class="result-box" id="resultBox">
+    <div class="result-title">Connection Result</div>
+    <div class="result-row">Channel: <span id="resChannel">—</span></div>
+    <div class="result-row">Broadcaster ID: <span id="resBid">—</span></div>
+    <div class="sub-list" id="subList"></div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="note">
+    After connecting, Twitch will automatically trigger game events for follows, subs, raids, gifted subs, hype trains, and cheers.<br><br>
+    You only need to do this once. Tokens are stored securely in Supabase.
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──
+// Update these to match your actual URLs
+const REDIRECT_URI = window.location.href.split('?')[0]; // this page's URL
+const SUPABASE_FUNCTIONS_URL = 'https://iirhceqhebwqulbwqmdz.supabase.co/functions/v1';
+
+const SCOPES = [
+  'channel:read:subscriptions',
+  'channel:read:redemptions',
+  'moderator:read:followers',
+  'bits:read',
+].join(' ');
+
+function startAuth() {
+  const clientId = document.getElementById('clientId').value.trim();
+  if (!clientId) { setStatus('Enter your Client ID first', 'err'); return; }
+  localStorage.setItem('foxden_twitch_client_id', clientId);
+  const authUrl = `https://id.twitch.tv/oauth2/authorize?` +
+    `client_id=${encodeURIComponent(clientId)}` +
+    `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+    `&response_type=code` +
+    `&scope=${encodeURIComponent(SCOPES)}` +
+    `&force_verify=true`;
+  window.location.href = authUrl;
+}
+
+function setStatus(msg, type = '') {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = 'status ' + type;
+}
+
+async function handleCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const error = params.get('error');
+
+  if (error) { setStatus('Twitch auth cancelled or failed: ' + error, 'err'); return; }
+  if (!code) return;
+
+  const clientId = localStorage.getItem('foxden_twitch_client_id');
+  if (!clientId) { setStatus('Client ID missing — please start again', 'err'); return; }
+
+  // Pre-fill the input
+  document.getElementById('clientId').value = clientId;
+
+  setStatus('Exchanging auth code with Supabase…');
+
+  try {
+    const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/twitch-auth/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, redirect_uri: REDIRECT_URI, client_id: clientId }),
+    });
+
+    const data = await res.json();
+
+    if (data.error) { setStatus('Error: ' + data.error, 'err'); return; }
+
+    setStatus('Connected! EventSub subscriptions registered. ✓', 'ok');
+
+    // Show results
+    document.getElementById('resChannel').textContent = data.broadcaster || '?';
+    document.getElementById('resBid').textContent = data.broadcaster_id || '?';
+
+    const subList = document.getElementById('subList');
+    subList.innerHTML = (data.subscriptions || []).map(s =>
+      `<div class="sub-item"><span>${s.type}</span><span class="${s.status === 200 || s.status === 202 ? 'sub-ok' : 'sub-err'}">${s.status === 200 || s.status === 202 ? '✓' : '✗ ' + s.status}</span></div>`
+    ).join('');
+
+    document.getElementById('resultBox').style.display = 'block';
+
+    // Clean URL
+    window.history.replaceState({}, '', window.location.pathname);
+
+  } catch (e) {
+    setStatus('Network error: ' + e.message, 'err');
+  }
+}
+
+// Run on load
+handleCallback();
+</script>
+</body>
+</html>
