@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Fox Den 🦊</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg:#0d0a08;--bg-mid:#16110d;--bg-card:#1e1710;--bg-card2:#231c13;
+  --amber:#c8832a;--amber-b:#e8a84a;--amber-d:#7a4f1a;
+  --teal:#3a9e8f;--teal-b:#5ecfbe;--crimson:#8f2a2a;--crimson-b:#c94040;
+  --gold:#d4aa3a;--text:#e8d9c0;--text-d:#9a8570;--text-b:#f5ead8;
+  --border:rgba(200,131,42,0.22);--border-b:rgba(200,131,42,0.45);
+  --shadow:0 4px 24px rgba(0,0,0,0.7);
+  --glow-a:0 0 14px rgba(200,131,42,0.35);--glow-t:0 0 14px rgba(58,158,143,0.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',Georgia,serif;font-size:15px;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 0%,rgba(200,131,42,0.04),transparent 60%),radial-gradient(ellipse at 80% 100%,rgba(58,158,143,0.03),transparent 60%);pointer-events:none;z-index:0}
+.wrap{max-width:820px;margin:0 auto;padding:0 10px 40px;position:relative;z-index:1}
+
+/* HEADER */
+.hdr{text-align:center;padding:22px 16px 14px;border-bottom:1px solid var(--border);position:relative}
+.hdr::after{content:'';position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);width:100px;height:2px;background:linear-gradient(90deg,transparent,var(--amber),transparent)}
+.hdr-title{font-family:'Cinzel Decorative',serif;font-size:clamp(18px,4vw,28px);color:var(--amber-b);text-shadow:0 0 20px rgba(200,131,42,0.5),0 2px 4px rgba(0,0,0,0.8);letter-spacing:2px}
+.hdr-sub{font-size:13px;color:var(--text-d);font-style:italic;margin-top:3px;letter-spacing:1px}
+.game-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:2px;font-size:13px;font-style:italic;margin-top:8px;border:1px solid var(--border);background:var(--bg-card);transition:all 0.4s}
+.game-badge.phasmo{border-color:rgba(143,95,207,0.4);color:#c9a0f5;background:rgba(143,95,207,0.1)}
+.game-badge.demon{border-color:rgba(143,42,42,0.4);color:#f5a0a0;background:rgba(143,42,42,0.1)}
+.game-badge.val{border-color:rgba(74,158,95,0.4);color:#9fd4a8;background:rgba(74,158,95,0.1)}
+.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--text-d);flex-shrink:0}
+.status-dot.live{background:var(--crimson-b);box-shadow:0 0 6px var(--crimson-b);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* SECTION */
+.sec{background:var(--bg-card);border:1px solid var(--border);border-radius:2px;margin-top:14px;overflow:hidden;box-shadow:var(--shadow)}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:linear-gradient(90deg,var(--bg-card2),var(--bg-card));border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+.sec-title{font-family:'Cinzel Decorative',serif;font-size:10px;color:var(--amber);letter-spacing:2px}
+.sec-tog{color:var(--text-d);font-size:11px;transition:transform 0.2s}
+.sec.col .sec-tog{transform:rotate(-90deg)}
+.sec-body{padding:14px}
+.sec.col .sec-body{display:none}
+
+/* JOIN */
+.join-box{text-align:center;padding:4px 0 8px}
+.join-title{font-family:'Cinzel Decorative',serif;font-size:12px;color:var(--amber-b);letter-spacing:2px;margin-bottom:8px}
+.join-desc{font-size:14px;color:var(--text-d);font-style:italic;margin-bottom:14px;line-height:1.5}
+.join-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.join-input{background:var(--bg);border:1px solid var(--border-b);color:var(--text);padding:8px 14px;font-family:'Crimson Pro',serif;font-size:15px;border-radius:2px;max-width:220px;width:100%}
+.join-input:focus{outline:none;border-color:var(--amber);box-shadow:var(--glow-a)}
+.join-btn{background:rgba(200,131,42,0.15);border:1px solid var(--amber);color:var(--amber-b);padding:8px 22px;font-family:'Cinzel Decorative',serif;font-size:10px;cursor:pointer;border-radius:2px;letter-spacing:2px;transition:all 0.2s;white-space:nowrap}
+.join-btn:hover{background:rgba(200,131,42,0.28)}
+.no-game-msg{text-align:center;color:var(--text-d);font-style:italic;padding:10px;font-size:14px}
+.player-bar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;justify-content:center;padding:4px 0}
+.player-name{font-size:14px;font-style:italic;color:var(--text-d)}
+.player-name strong{color:var(--amber-b)}
+.tails-count{font-size:15px;color:var(--amber-b);font-weight:600}
+.switch-btn{background:none;border:1px solid var(--border);color:var(--text-d);padding:4px 10px;font-family:'Crimson Pro',serif;font-size:13px;cursor:pointer;border-radius:2px;transition:all 0.2s}
+.switch-btn:hover{border-color:var(--amber-d);color:var(--text)}
+
+/* CARDS */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:7px}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:2px;padding:9px 11px;font-size:13px;color:var(--text);line-height:1.35;position:relative;overflow:hidden;min-height:50px;display:flex;align-items:center;transition:all 0.2s}
+.card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--amber-d);transition:background 0.3s}
+.card.done{background:rgba(200,131,42,0.08);border-color:var(--amber);color:var(--amber-b)}
+.card.done::before{background:var(--amber-b);box-shadow:0 0 6px var(--amber)}
+.card.done::after{content:'✦';position:absolute;top:4px;right:6px;font-size:10px;color:var(--amber)}
+.card.pop{animation:cardPop 0.5s ease}
+@keyframes cardPop{0%{transform:scale(1)}50%{transform:scale(1.06);border-color:var(--gold);background:rgba(212,170,58,0.15)}100%{transform:scale(1)}}
+.card.swappable{cursor:pointer;border-style:dashed}
+.card.swappable:hover{border-color:var(--teal-b);background:rgba(58,158,143,0.07);color:var(--teal-b)}
+.cards-empty{text-align:center;color:var(--text-d);font-style:italic;padding:16px}
+.cards-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+.card-btn{background:var(--bg-card2);border:1px solid var(--border);color:var(--text-d);padding:6px 14px;font-family:'Crimson Pro',serif;font-size:13px;cursor:pointer;border-radius:2px;transition:all 0.2s;display:flex;align-items:center;gap:5px}
+.card-btn:hover{border-color:var(--amber-d);color:var(--text)}
+.card-btn.active{border-color:var(--teal);color:var(--teal-b)}
+.card-btn .cost{font-size:11px;color:var(--amber-d);margin-left:3px}
+.card-btn:hover .cost{color:var(--amber-b)}
+.swap-hint{font-size:12px;color:var(--text-d);font-style:italic;margin-top:7px}
+
+/* WAGER */
+.wager-box{background:linear-gradient(135deg,var(--bg),#1a1208);border:1px solid var(--border-b);border-radius:2px;padding:14px;position:relative}
+.wager-box::before{content:'🕯️';position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:17px}
+.wager-label{font-family:'Cinzel Decorative',serif;font-size:11px;color:var(--amber-b);text-align:center;margin-bottom:6px;letter-spacing:1px}
+.wager-event{text-align:center;font-style:italic;color:var(--text-b);font-size:15px;margin-bottom:8px;padding:5px;background:rgba(200,131,42,0.05);border-radius:2px}
+.wager-timer{text-align:center;font-family:'Cinzel Decorative',serif;font-size:11px;color:var(--crimson-b);margin-bottom:8px;letter-spacing:1px}
+.wager-pools{display:flex;gap:12px;justify-content:center;margin-bottom:10px;font-size:13px}
+.pool-yes{color:var(--teal-b)}.pool-no{color:#f08080}
+.ghost-sel{width:100%;background:var(--bg);border:1px solid var(--border-b);color:var(--text);padding:7px 10px;font-family:'Crimson Pro',serif;font-size:14px;border-radius:2px;margin-bottom:8px}
+.ghost-sel:focus{outline:none;border-color:var(--amber)}
+.bet-row{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.bet-input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:'Crimson Pro',serif;font-size:14px;border-radius:2px}
+.bet-input:focus{outline:none;border-color:var(--amber)}
+.qbtns{display:flex;gap:4px}
+.qbtn{background:var(--bg-card);border:1px solid var(--border);color:var(--text-d);padding:4px 8px;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;font-family:'Crimson Pro',serif}
+.qbtn:hover{border-color:var(--amber-d);color:var(--text)}
+.bet-btns{display:flex;gap:6px}
+.bet-yes,.bet-no,.bet-ghost{flex:1;padding:8px;border-radius:2px;font-family:'Cinzel Decorative',serif;font-size:9px;cursor:pointer;border:1px solid;transition:all 0.2s;letter-spacing:1px}
+.bet-yes{background:rgba(58,158,143,0.1);border-color:var(--teal);color:var(--teal-b)}
+.bet-yes:hover{background:rgba(58,158,143,0.25)}
+.bet-no{background:rgba(143,42,42,0.1);border-color:var(--crimson);color:#f08080}
+.bet-no:hover{background:rgba(143,42,42,0.25)}
+.bet-ghost{background:rgba(143,95,207,0.1);border-color:#8f5fcf;color:#c9a0f5}
+.bet-ghost:hover{background:rgba(143,95,207,0.25)}
+.my-bet{text-align:center;font-style:italic;color:var(--text-d);font-size:13px;margin-top:6px}
+.my-bet strong{color:var(--amber-b)}
+.wager-closed{text-align:center;color:var(--text-d);font-style:italic;padding:8px}
+.wager-resolved{text-align:center;padding:8px}
+.wager-outcome{font-family:'Cinzel Decorative',serif;font-size:11px;color:var(--gold);letter-spacing:1px}
+.bettors-mini{margin-top:8px;max-height:90px;overflow-y:auto}
+.bettor-row{display:flex;justify-content:space-between;padding:3px 4px;font-size:12px;border-bottom:1px solid rgba(200,131,42,0.06)}
+.wager-empty{text-align:center;color:var(--text-d);font-style:italic;padding:16px;font-size:14px}
+
+/* BREWS */
+.brew-section-label{font-family:'Cinzel Decorative',serif;font-size:9px;letter-spacing:2px;color:var(--text-d);padding:6px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px}
+.brew-section-label.curses{color:var(--crimson-b)}
+.brew-section-label.boosts{color:var(--teal-b);margin-top:14px}
+.brew-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:9px;margin-bottom:6px}
+.brew-card{background:var(--bg);border:1px solid var(--border);border-radius:2px;padding:11px;transition:all 0.2s;position:relative}
+.brew-card:hover{border-color:var(--amber-d)}
+.brew-name{font-family:'Cinzel Decorative',serif;font-size:10px;color:var(--amber-b);margin-bottom:4px}
+.brew-ico{font-size:19px;float:right;margin-left:6px}
+.brew-desc{font-size:12px;color:var(--text-d);font-style:italic;line-height:1.4;margin-bottom:6px;clear:none}
+.brew-effect{font-size:11px;padding:3px 7px;border-radius:2px;margin-bottom:7px}
+.brew-effect.boost{color:var(--teal-b);background:rgba(58,158,143,0.08);border:1px solid rgba(58,158,143,0.2)}
+.brew-effect.curse{color:#f08080;background:rgba(143,42,42,0.08);border:1px solid rgba(143,42,42,0.2)}
+.brew-cost{font-size:13px;color:var(--amber);margin-bottom:6px}
+.map-sel{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 8px;font-family:'Crimson Pro',serif;font-size:13px;border-radius:2px;margin-bottom:6px}
+.brew-buy-btn{width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text-d);padding:6px;font-family:'Crimson Pro',serif;font-size:13px;cursor:pointer;border-radius:2px;transition:all 0.2s}
+.brew-buy-btn:hover{border-color:var(--amber);color:var(--amber-b)}
+.brew-buy-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+/* ACTIVE BREWS */
+.active-brews-row{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.brew-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:2px;font-size:12px;font-style:italic;animation:fadeIn 0.3s ease}
+.brew-badge.curse{background:rgba(143,42,42,0.15);border:1px solid rgba(143,42,42,0.35);color:#f08080}
+.brew-badge.boost{background:rgba(58,158,143,0.12);border:1px solid rgba(58,158,143,0.3);color:var(--teal-b)}
+.brew-badge.map{background:rgba(200,131,42,0.12);border:1px solid rgba(200,131,42,0.3);color:var(--amber-b)}
+@keyframes fadeIn{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
+
+/* MAP QUEUE */
+.map-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-bottom:1px solid rgba(200,131,42,0.06);font-size:13px}
+.map-name{flex:1;color:var(--amber-b);font-style:italic}
+.map-game{color:var(--text-d);font-size:11px}
+.map-buyer{color:var(--text-d);font-size:11px}
+
+/* LEADERBOARD */
+.lb-list{list-style:none}
+.lb-row{display:flex;align-items:center;padding:6px 8px;border-bottom:1px solid rgba(200,131,42,0.06);transition:background 0.15s}
+.lb-row:hover{background:rgba(200,131,42,0.04)}
+.lb-rank{font-family:'Cinzel Decorative',serif;font-size:10px;color:var(--text-d);width:26px;text-align:center}
+.lb-rank.g{color:var(--gold);text-shadow:0 0 8px rgba(212,170,58,0.4)}
+.lb-rank.s{color:#a0a0b8}.lb-rank.b{color:#b0704a}
+.lb-name{flex:1;font-size:14px;color:var(--text-b);padding:0 8px}
+.lb-tails{font-size:13px;color:var(--amber-b);font-weight:600}
+.lb-wr{font-size:11px;color:var(--text-d);margin-right:6px}
+.lb-empty{text-align:center;color:var(--text-d);font-style:italic;padding:14px}
+
+/* TOAST */
+#toast{position:fixed;bottom:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.toast{background:var(--bg-card2);border:1px solid var(--border-b);color:var(--text);padding:9px 14px;border-radius:2px;font-family:'Crimson Pro',serif;font-size:13px;max-width:280px;box-shadow:var(--shadow);animation:tIn 0.25s ease,tOut 0.25s ease 2.75s forwards;position:relative;overflow:hidden}
+.toast::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--amber)}
+.toast.ok::before{background:var(--teal)}.toast.err::before{background:var(--crimson-b)}
+@keyframes tIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+@keyframes tOut{from{opacity:1}to{opacity:0}}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--amber-d);border-radius:2px}
+.text-d{color:var(--text-d);font-style:italic;font-size:13px}
+.divider{border:none;border-top:1px solid var(--border);margin:10px 0}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div class="wrap">
+
+<div class="hdr">
+  <div class="hdr-title">🦊 The Fox Den 🦊</div>
+  <div class="hdr-sub">Ulli's & Devlyn's Cursed Brew Café</div>
+  <div id="gameBadge" class="game-badge"><span class="status-dot" id="statusDot"></span>&nbsp;<span id="gameLabel">No game active</span></div>
+</div>
+
+<!-- ACTIVE BREWS (hidden when empty) -->
+<div class="sec" id="brewsSec" style="display:none">
+  <div class="sec-hdr" onclick="toggleSec('brewsSec')"><span class="sec-title">🍵 Active Brews</span><span class="sec-tog">▾</span></div>
+  <div class="sec-body"><div class="active-brews-row" id="activeBrewsRow"></div></div>
+</div>
+
+<!-- MAP QUEUE (hidden when empty) -->
+<div class="sec" id="mapSec" style="display:none">
+  <div class="sec-hdr" onclick="toggleSec('mapSec')"><span class="sec-title">🗺️ Map Queue</span><span class="sec-tog">▾</span></div>
+  <div class="sec-body" id="mapQueueBody"></div>
+</div>
+
+<!-- WAGER BOARD -->
+<div class="sec" id="wagerSec">
+  <div class="sec-hdr" onclick="toggleSec('wagerSec')"><span class="sec-title">🎲 The Wager Board</span><span class="sec-tog">▾</span></div>
+  <div class="sec-body" id="wagerBody"><div class="wager-empty">🦊 No wager open. Watch for Devlyn's signal…</div></div>
+</div>
+
+<!-- JOIN / PLAYER -->
+<div class="sec" id="joinSec">
+  <div class="sec-hdr" onclick="toggleSec('joinSec')"><span class="sec-title">🐾 Enter the Den</span><span class="sec-tog">▾</span></div>
+  <div class="sec-body">
+    <div id="noGameMsg" style="display:none"><div class="no-game-msg">🦊 Waiting for mirevixen to start the stream…</div></div>
+    <div id="joinBox" style="display:none">
+      <div class="join-box">
+        <div class="join-title">Join the Game</div>
+        <div class="join-desc">Enter your Twitch username to join the Den. Earn Fox Tails 🦊 by completing event cards and winning wagers!</div>
+        <div class="join-row">
+          <input type="text" class="join-input" id="joinName" placeholder="Your Twitch username…" maxlength="30" onkeydown="if(event.key==='Enter')joinGame()">
+          <button class="join-btn" onclick="joinGame()">ENTER THE DEN</button>
+        </div>
+      </div>
+    </div>
+    <div id="playerBox" style="display:none">
+      <div class="player-bar">
+        <span class="player-name">Playing as <strong id="playerNameDisplay"></strong></span>
+        <span class="tails-count" id="playerTails">0 🦊</span>
+        <button class="switch-btn" onclick="switchPlayer()">Switch</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MY CARDS -->
+<div class="sec" id="cardsSec">
+  <div class="sec-hdr" onclick="toggleSec('cardsSec')"><span class="sec-title">🃏 My Card Hand</span><span class="sec-tog">▾</span></div>
+  <div class="sec-body">
+    <div class="text-d" id="cardsHint" style="margin-bottom:10px">Join the Den to see your cards.</div>
+    <div class="cards-grid" id="cardsGrid"></div>
+    <div class="cards-actions" id="cardsActions" style="display:none">
+      <button class="card-btn" id="swapBtn" onclick="toggleSwapMode()">
+        🔄 Swap a Card <span class="cost" id="swapCostLabel"></span>
+      </button>
+      <button class="card-btn" onclick="buyNewCard()">
+        🃏 Buy New Card <span class="cost" id="buyCostLabel"></span>
+      </button>
+    </div>
+    <div class="swap-hint" id="swapHint" style="display:none">Click any incomplete card to swap it for a random new one.</div>
+  </div>
+</div>
+
+<!-- BREW SHOP -->
+<div class="sec" id="shopSec">
+  <div class="sec-hdr" onclick="toggleSec('shopSec')"><span class="sec-title">☕ The Brew Shop</span><span class="sec-tog">▾</span></div>
+  <div class="sec-body">
+    <div class="text-d" style="margin-bottom:12px">Spend your Fox Tails on cursed brews and boons. Prices shown in 🦊.</div>
+    <div id="brewShopContent"></div>
+  </div>
+</div>
+
+<!-- LEADERBOARD -->
+<div class="sec" id="lbSec">
+  <div class="sec-hdr" onclick="toggleSec('lbSec')"><span class="sec-title">🏆 Fox Tail Standings</span><span class="sec-tog">▾</span></div>
+  <div class="sec-body"><ul class="lb-list" id="lbList"><li class="lb-empty">No tails earned yet.</li></ul></div>
+</div>
+
+</div>
+<script>
+const SURL='https://iirhceqhebwqulbwqmdz.supabase.co';
+const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcmhjZXFoZWJ3cXVsYndxbWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjEwMTYsImV4cCI6MjA4ODk5NzAxNn0.FLbqROssXJooPY3Qcxwmpkl49-brKmXLBEwm1ZjTY60';
+const sb=supabase.createClient(SURL,SKEY);
+
+// ── BREWS DEFINITION ──
+const BREWS=[
+  // Curses sorted by cost — available in all games unless horrorOnly
+  {key:'ulli_slow',name:"Ulli's Slow Paw",ico:'🐾',cost:20,desc:"Ulli walks dramatically slowly. Mire must walk everywhere for 2 minutes.",effect:"Walk only, 2 minutes",curse:true,horrorOnly:false},
+  {key:'devlyn_spite',name:"Devlyn's Spite Brew",ico:'😾',cost:25,desc:"Devlyn knocks everything over. Mire must drop all held equipment and repick.",effect:"Drop & repick all equipment",curse:true,horrorOnly:false},
+  {key:'banshee_chamomile',name:"Banshee's Chamomile",ico:'☕',cost:30,desc:"A brew that silences. Mire cannot speak for 60 seconds.",effect:"Silence for 60 seconds",curse:true,horrorOnly:false},
+  {key:'cursed_earl',name:"Cursed Earl Grey",ico:'🫖',cost:35,desc:"The lights go out. Mire must turn off all lights next investigation.",effect:"No lights, next investigation",curse:true,horrorOnly:true},
+  {key:'ghost_herbal',name:"Ghost's Herbal Blend",ico:'🌿',cost:50,desc:"Complete paranoia. Mire uses only the starter loadout next investigation.",effect:"Starter loadout only",curse:true,horrorOnly:true},
+  // Map pickers (horror only, game-specific)
+  {key:'map_pick_phasmo',name:"Cartographer's Curse (Phasmo)",ico:'🗺️',cost:60,desc:"You pick the next Phasmophobia map. Binding.",effect:"Pick next Phasmo map",curse:true,horrorOnly:true,mapGame:'phasmo'},
+  {key:'map_pick_demon',name:"Cartographer's Curse (Demon)",ico:'🗺️',cost:60,desc:"You pick the next Demonologist map. Binding.",effect:"Pick next Demon map",curse:true,horrorOnly:true,mapGame:'demon'},
+  // Boosts sorted by cost
+  {key:'fox_blend',name:"Fox Den House Blend",ico:'🦊',cost:15,desc:"Ulli stamps your card. Your next card match or wager win pays double.",effect:"Next reward: 2× Fox Tails",curse:false,horrorOnly:false},
+  {key:'lucky_roast',name:"Mire's Lucky Roast",ico:'🍀',cost:20,desc:"Devlyn blesses your wager. If you lose your next bet, it's refunded.",effect:"Wager shield — one wrong bet refunded",curse:false,horrorOnly:false},
+  {key:'lucky_paw',name:"Ulli's Lucky Paw",ico:'🐾',cost:20,desc:"Ulli taps the next card. Your next card match gives +15 bonus Fox Tails.",effect:"Next card match: +15 bonus Fox Tails",curse:false,horrorOnly:false},
+  {key:'treasure_chest',name:"Devlyn's Treasure Chest",ico:'📦',cost:25,desc:"Devlyn bats a mystery chest off the shelf. Random reward between 5 and 50 Fox Tails!",effect:"Random 5–50 Fox Tails",curse:false,horrorOnly:false},
+  {key:'new_cards',name:"Fresh Deck",ico:'🃏',cost:25,desc:"Ulli shuffles your hand. Up to 3 incomplete cards are swapped for random new ones automatically.",effect:"3 random cards auto-replaced",curse:false,horrorOnly:false},
+  {key:'random_event',name:"Devlyn's Wild Card",ico:'🎴',cost:25,desc:"Devlyn bats a random card off the shelf. A random event from the current game pool triggers instantly — awarding tails to anyone who has it!",effect:"Random event triggers now",curse:false,horrorOnly:false},
+  {key:'pick_event',name:"Ulli's Chosen Moment",ico:'✨',cost:80,desc:"Ulli marks the moment. Pick any event from the current game pool — it triggers instantly, awarding tails to all card holders.",effect:"Pick any event — triggers now",curse:false,horrorOnly:false},
+];
+
+// ── STATE ──
+let playerName=localStorage.getItem('foxden_player')||null;
+let playerData=null;
+let playerCards=[];
+let session={active_game:'none',game_started:false};
+let activeWager=null;
+let wagerTimer=null;
+let wagerTimeLeft=0;
+let swapMode=false;
+let gameEvents=[];
+let gameMaps={phasmo:[],demon:[]};
+let gameGhosts={phasmo:[],demon:[]};
+let SETTINGS={swapCost:10,buyCost:20,cardReward:5,wagerReward:10};
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded',async()=>{
+  await loadReferenceData();
+  await loadSession();
+  await loadLeaderboard();
+  await loadActiveBrews();
+  await loadMapQueue();
+  await loadActiveWager();
+  if(playerName)await loadPlayer();
+  subscribeRealtime();
+  renderBrewShop();
+  updateCostLabels();
+});
+
+// ── HELPERS ──
+function sbErr(ctx,err){
+  const msg=err?.message||err?.details||JSON.stringify(err);
+  if(msg&&(msg.includes('DataCloneError')||msg.includes('postMessage')))return;
+  console.error('[FoxDen:'+ctx+']',msg);
+}
+async function qry(table,filters={}){
+  let r=sb.from(table).select('*');
+  for(const[k,v]of Object.entries(filters))r=r.eq(k,v);
+  const{data,error}=await r;
+  if(error){sbErr('q:'+table,error);return[];}
+  return data||[];
+}
+async function ins(table,obj){
+  const{data,error}=await sb.from(table).insert(obj).select().single();
+  if(error){sbErr('ins:'+table,error);return null;}
+  return data;
+}
+async function upd(table,match,vals){
+  const{error}=await sb.from(table).update(vals).match(match);
+  if(error)sbErr('upd:'+table,error);
+}
+
+// ── REFERENCE DATA (events, maps, ghosts) ──
+async function loadReferenceData(){
+  const[evts,maps,ghosts]=await Promise.all([
+    qry('game_events',{active:true}),
+    qry('game_maps',{active:true}),
+    qry('game_ghosts',{active:true}),
+  ]);
+  gameEvents=evts;
+  gameMaps.phasmo=maps.filter(m=>m.game==='phasmo').map(m=>m.map_name);
+  gameMaps.demon=maps.filter(m=>m.game==='demonologist').map(m=>m.map_name);
+  gameGhosts.phasmo=ghosts.filter(g=>g.game==='phasmo').map(g=>g.ghost_name);
+  gameGhosts.demon=ghosts.filter(g=>g.game==='demonologist').map(g=>g.ghost_name);
+}
+
+function getCardPool(game){
+  // Returns event_text strings valid for card dealing for the given game
+  const cats=['general'];
+  if(game==='phasmo')cats.push('horror','phasmo');
+  else if(game==='demonologist')cats.push('horror','demonologist');
+  else if(game==='val')cats.push('valheim');
+  return gameEvents.filter(e=>cats.includes(e.category)).map(e=>e.event_text);
+}
+
+// ── SESSION ──
+async function loadSession(){
+  try{
+    const{data,error}=await sb.from('session').select('*').eq('id',1).single();
+    if(!error&&data)session=data;
+  }catch(e){}
+  renderSessionUI();
+}
+
+function renderSessionUI(){
+  const g=session.active_game||'none';
+  const started=session.game_started||false;
+  // Badge
+  const badge=document.getElementById('gameBadge');
+  const dot=document.getElementById('statusDot');
+  const lbl=document.getElementById('gameLabel');
+  badge.className='game-badge'+(g!=='none'?' '+g:'');
+  dot.className='status-dot'+(started?' live':'');
+  const labels={none:'No game active',phasmo:'Phasmophobia',demon:'Demonologist',val:'Valheim'};
+  lbl.textContent=labels[g]||g;
+  // Join section
+  const noGame=document.getElementById('noGameMsg');
+  const joinBox=document.getElementById('joinBox');
+  const playerBox=document.getElementById('playerBox');
+  if(!started){
+    noGame.style.display='block';
+    joinBox.style.display='none';
+    playerBox.style.display='none';
+  } else if(playerData){
+    noGame.style.display='none';
+    joinBox.style.display='none';
+    playerBox.style.display='block';
+  } else {
+    noGame.style.display='none';
+    joinBox.style.display='block';
+    playerBox.style.display='none';
+  }
+  renderBrewShop();
+}
+
+// ── PLAYER ──
+async function joinGame(){
+  if(!session.game_started){toast('No game active yet!','err');return;}
+  const name=document.getElementById('joinName').value.trim().toLowerCase();
+  if(!name){toast('Enter your username!','err');return;}
+  let rows=await qry('viewers',{username:name});
+  if(rows.length){
+    playerData=rows[0];
+  } else {
+    playerData=await ins('viewers',{username:name,tails:0,wins:0,bets:0,shielded:false,double_bet:false,lucky_paw:false});
+    if(!playerData){toast('Error joining. Try again.','err');return;}
+    await dealCards(playerData.id,session.active_game);
+  }
+  playerName=name;
+  localStorage.setItem('foxden_player',playerName);
+  await loadPlayer();
+  toast(`Welcome to the Den, ${playerName}! 🦊`,'ok');
+}
+
+async function loadPlayer(){
+  if(!playerName)return;
+  const rows=await qry('viewers',{username:playerName});
+  if(!rows.length){playerName=null;localStorage.removeItem('foxden_player');renderSessionUI();return;}
+  playerData=rows[0];
+  playerCards=await qry('cards',{viewer_id:playerData.id});
+  renderPlayerUI();
+  renderCards();
+  renderBrewShop();
+  await loadLeaderboard();
+  updateCostLabels();
+}
+
+function renderPlayerUI(){
+  document.getElementById('noGameMsg').style.display='none';
+  document.getElementById('joinBox').style.display='none';
+  document.getElementById('playerBox').style.display='block';
+  document.getElementById('playerNameDisplay').textContent=playerData.username;
+  document.getElementById('playerTails').textContent=playerData.tails+' 🦊';
+  document.getElementById('cardsHint').textContent='Your hand — cards auto-complete when events are triggered.';
+  document.getElementById('cardsActions').style.display='flex';
+}
+
+function switchPlayer(){
+  playerName=null;playerData=null;playerCards=[];
+  localStorage.removeItem('foxden_player');
+  document.getElementById('joinBox').style.display=session.game_started?'block':'none';
+  document.getElementById('noGameMsg').style.display=session.game_started?'none':'block';
+  document.getElementById('playerBox').style.display='none';
+  document.getElementById('joinName').value='';
+  document.getElementById('cardsGrid').innerHTML='';
+  document.getElementById('cardsActions').style.display='none';
+  document.getElementById('cardsHint').textContent='Join the Den to see your cards.';
+}
+
+function updateCostLabels(){
+  document.getElementById('swapCostLabel').textContent='('+SETTINGS.swapCost+'🦊)';
+  document.getElementById('buyCostLabel').textContent='('+SETTINGS.buyCost+'🦊)';
+}
+
+// ── CARDS ──
+async function dealCards(viewerId,game){
+  const pool=getCardPool(game);
+  if(!pool.length)return;
+  const shuffled=[...pool].sort(()=>Math.random()-0.5).slice(0,8);
+  for(const ev of shuffled)await ins('cards',{viewer_id:viewerId,event_text:ev,completed:false});
+}
+
+function renderCards(){
+  const grid=document.getElementById('cardsGrid');
+  if(!playerCards.length){grid.innerHTML='<div class="cards-empty">No cards yet.</div>';return;}
+  grid.innerHTML=playerCards.map(c=>`
+    <div class="card ${c.completed?'done':swapMode&&!c.completed?'swappable':''}" id="card-${c.id}"
+      onclick="${swapMode&&!c.completed?`doSwap('${c.id}')`:''}" >
+      ${c.event_text}
+    </div>`).join('');
+  document.getElementById('swapBtn').classList.toggle('active',swapMode);
+}
+
+function toggleSwapMode(){
+  if(!playerData)return;
+  if(!swapMode&&playerData.tails<SETTINGS.swapCost){toast(`Need ${SETTINGS.swapCost}🦊 to swap a card`,'err');return;}
+  swapMode=!swapMode;
+  document.getElementById('swapHint').style.display=swapMode?'block':'none';
+  renderCards();
+}
+
+async function doSwap(cardId){
+  if(!swapMode)return;
+  if(playerData.tails<SETTINGS.swapCost){toast(`Need ${SETTINGS.swapCost}🦊`,'err');swapMode=false;renderCards();return;}
+  const card=playerCards.find(c=>c.id===cardId);
+  if(!card||card.completed)return;
+  const current=playerCards.map(c=>c.event_text);
+  const pool=getCardPool(session.active_game||'none');
+  const avail=pool.filter(e=>!current.includes(e));
+  if(!avail.length){toast('No more unique events available!','err');return;}
+  const newEv=avail[Math.floor(Math.random()*avail.length)];
+  await upd('cards',{id:cardId},{event_text:newEv,completed:false});
+  await upd('viewers',{id:playerData.id},{tails:playerData.tails-SETTINGS.swapCost});
+  swapMode=false;
+  document.getElementById('swapHint').style.display='none';
+  await loadPlayer();
+  toast(`Card swapped! -${SETTINGS.swapCost}🦊 🃏`,'ok');
+}
+
+async function buyNewCard(){
+  if(!playerData){toast('Join the Den first!','err');return;}
+  if(playerData.tails<SETTINGS.buyCost){toast(`Need ${SETTINGS.buyCost}🦊 to buy a new card`,'err');return;}
+  const current=playerCards.map(c=>c.event_text);
+  const pool=getCardPool(session.active_game||'none');
+  const avail=pool.filter(e=>!current.includes(e));
+  if(!avail.length){toast('No unique events left to add!','err');return;}
+  const newEv=avail[Math.floor(Math.random()*avail.length)];
+  const completed=playerCards.filter(c=>c.completed);
+  if(completed.length>0){
+    await upd('cards',{id:completed[0].id},{event_text:newEv,completed:false,completed_at:null});
+  } else {
+    await ins('cards',{viewer_id:playerData.id,event_text:newEv,completed:false});
+  }
+  await upd('viewers',{id:playerData.id},{tails:playerData.tails-SETTINGS.buyCost});
+  await loadPlayer();
+  toast(`New card added! -${SETTINGS.buyCost}🦊 🃏`,'ok');
+}
+
+async function checkCardMatch(eventText){
+  if(!playerData||!playerCards.length)return;
+  const match=playerCards.find(c=>!c.completed&&c.event_text.toLowerCase()===eventText.toLowerCase());
+  if(!match)return;
+  await upd('cards',{id:match.id},{completed:true,completed_at:new Date().toISOString()});
+  let reward=SETTINGS.cardReward;
+  if(playerData.double_bet){reward*=2;await upd('viewers',{id:playerData.id},{double_bet:false});}
+  let bonus=0;
+  if(playerData.lucky_paw){bonus=15;await upd('viewers',{id:playerData.id},{lucky_paw:false});}
+  await upd('viewers',{id:playerData.id},{tails:(playerData.tails||0)+reward+bonus});
+  const el=document.getElementById('card-'+match.id);
+  if(el)el.classList.add('done','pop');
+  toast(`Card matched: "${eventText}" +${reward+bonus}🦊${bonus?' (Lucky Paw!)':''}`, 'ok');
+  await loadPlayer();
+  // Check full hand
+  const remaining=playerCards.filter(c=>!c.completed&&c.id!==match.id);
+  if(!remaining.length){
+    toast('🎉 Full hand completed! New cards coming…','ok');
+    await sb.from('cards').delete().eq('viewer_id',playerData.id);
+    await dealCards(playerData.id,session.active_game||'none');
+    await loadPlayer();
+  }
+}
+
+// ── WAGER ──
+async function loadActiveWager(){
+  try{
+    const{data,error}=await sb.from('wager').select('*').eq('resolved',false).order('created_at',{ascending:false}).limit(1);
+    if(error||!data||!data.length){activeWager=null;renderWager();return;}
+    activeWager=data[0];
+    const bets=await qry('wager_bets',{wager_id:activeWager.id});
+    activeWager.bets=bets||[];
+  }catch(e){activeWager=null;}
+  renderWager();
+  if(activeWager&&activeWager.open)startWagerTimer();
+}
+
+function startWagerTimer(){
+  if(wagerTimer)clearInterval(wagerTimer);
+  wagerTimeLeft=60;
+  wagerTimer=setInterval(()=>{
+    wagerTimeLeft--;
+    const el=document.getElementById('wagerTimer');
+    if(el)el.textContent=wagerTimeLeft+'s';
+    if(wagerTimeLeft<=0){clearInterval(wagerTimer);wagerTimer=null;}
+  },1000);
+}
+
+function renderWager(){
+  const body=document.getElementById('wagerBody');
+  if(!activeWager){body.innerHTML='<div class="wager-empty">🦊 No wager open. Watch for Devlyn\'s signal…</div>';return;}
+  const w=activeWager;
+  const isGhost=w.wager_type==='ghost';
+  const myBet=playerData&&w.bets?w.bets.find(b=>b.viewer_id===playerData.id):null;
+  const yesPool=(w.bets||[]).filter(b=>b.side==='Yes').reduce((a,b)=>a+b.amount,0);
+  const noPool=(w.bets||[]).filter(b=>b.side==='No').reduce((a,b)=>a+b.amount,0);
+  const ghostMap={};
+  if(isGhost)(w.bets||[]).forEach(b=>{ghostMap[b.side]=(ghostMap[b.side]||0)+b.amount;});
+  const ghosts=session.active_game==='phasmo'?gameGhosts.phasmo:gameGhosts.demon;
+
+  body.innerHTML=`
+    <div class="wager-box">
+      <div class="wager-label">🎲 ${w.open?`Wager Open`:w.resolved?'✓ Resolved':'🔒 Closed'}</div>
+      <div class="wager-event">${w.event_text}</div>
+      ${w.open?`<div class="wager-timer">⏳ <span id="wagerTimer">${wagerTimeLeft}s</span> remaining</div>`:''}
+      ${!isGhost?`<div class="wager-pools"><span class="pool-yes">✔ Yes: ${yesPool}🦊 (${(w.bets||[]).filter(b=>b.side==='Yes').length})</span><span class="pool-no">✖ No: ${noPool}🦊 (${(w.bets||[]).filter(b=>b.side==='No').length})</span></div>`:''}
+      ${isGhost?`<div class="text-d" style="text-align:center;margin-bottom:8px">Top picks: ${Object.entries(ghostMap).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([g,a])=>`${g} (${a}🦊)`).join(' · ')||'none yet'}</div>`:''}
+      ${w.open&&playerData&&!myBet?`
+        <div>
+          ${isGhost?`<select class="ghost-sel" id="ghostPick"><option value="">— Choose a ghost —</option>${ghosts.map(g=>`<option>${g}</option>`).join('')}</select>`:''}
+          <div class="bet-row">
+            <input type="number" class="bet-input" id="betAmt" value="10" min="1" max="${playerData?.tails||0}">
+            <div class="qbtns">
+              <button class="qbtn" onclick="setAmt(10)">10</button>
+              <button class="qbtn" onclick="setAmt(25)">25</button>
+              <button class="qbtn" onclick="setAmt(50)">50</button>
+            </div>
+          </div>
+          <div class="bet-btns">
+            ${isGhost?`<button class="bet-ghost" onclick="placeBet()">👻 Bet on Ghost</button>`:`<button class="bet-yes" onclick="placeBet('Yes')">✔ YES</button><button class="bet-no" onclick="placeBet('No')">✖ NO</button>`}
+          </div>
+        </div>`:''}
+      ${myBet?`<div class="my-bet">Your bet: <strong>${myBet.side}</strong> for <strong>${myBet.amount}🦊</strong></div>`:''}
+      ${!w.open&&!w.resolved?'<div class="wager-closed">🔒 Betting closed. Awaiting outcome…</div>':''}
+      ${w.resolved?`<div class="wager-resolved"><div class="wager-outcome">Outcome: ${w.outcome}</div>${myBet&&myBet.side===w.outcome?'<div style="color:var(--gold);margin-top:4px">🏆 You won!</div>':myBet?'<div style="color:#f08080;margin-top:4px">You lost this one.</div>':''}</div>`:''}
+      <div class="bettors-mini">${(w.bets||[]).slice(-5).map(b=>{const sc=b.side==='Yes'?'var(--teal-b)':b.side==='No'?'#f08080':'#c9a0f5';return`<div class="bettor-row"><span>${b.viewer_name||'?'}</span><span style="color:${sc}">${b.side}</span><span style="color:var(--amber)">${b.amount}🦊</span></div>`;}).join('')}</div>
+    </div>`;
+  if(w.open&&wagerTimeLeft>0)startWagerTimer();
+}
+
+function setAmt(n){const el=document.getElementById('betAmt');if(el)el.value=n;}
+
+async function placeBet(side){
+  if(!playerData){toast('Join the Den first!','err');return;}
+  if(!activeWager||!activeWager.open){toast('Wager is not open!','err');return;}
+  const amount=parseInt(document.getElementById('betAmt')?.value)||0;
+  if(amount<=0){toast('Enter a valid amount','err');return;}
+  if(amount>playerData.tails){toast(`Not enough Fox Tails! You have ${playerData.tails}🦊`,'err');return;}
+  if(activeWager.wager_type==='ghost'){
+    side=document.getElementById('ghostPick')?.value;
+    if(!side){toast('Pick a ghost!','err');return;}
+  }
+  const existing=await qry('wager_bets',{wager_id:activeWager.id,viewer_id:playerData.id});
+  if(existing.length){toast('You already placed a bet!','err');return;}
+  await ins('wager_bets',{wager_id:activeWager.id,viewer_id:playerData.id,viewer_name:playerData.username,side,amount});
+  await upd('viewers',{id:playerData.id},{tails:playerData.tails-amount,bets:(playerData.bets||0)+1});
+  toast(`Bet placed: ${side} for ${amount}🦊`,'ok');
+  await loadPlayer();
+  await loadActiveWager();
+}
+
+// ── LEADERBOARD ──
+async function loadLeaderboard(){
+  const{data}=await sb.from('viewers').select('*').order('tails',{ascending:false}).limit(10);
+  const list=document.getElementById('lbList');
+  if(!data||!data.length){list.innerHTML='<li class="lb-empty">No tails earned yet.</li>';return;}
+  list.innerHTML=data.map((v,i)=>{
+    const rc=i===0?'g':i===1?'s':i===2?'b':'';
+    const ri=i===0?'👑':i===1?'🥈':i===2?'🥉':`${i+1}.`;
+    const wr=v.bets>0?Math.round((v.wins||0)/v.bets*100)+'%':'—';
+    return`<li class="lb-row"><span class="lb-rank ${rc}">${ri}</span><span class="lb-name">${v.username}</span><span class="lb-wr">${wr}</span><span class="lb-tails">${v.tails} 🦊</span></li>`;
+  }).join('');
+}
+
+// ── ACTIVE BREWS ──
+async function loadActiveBrews(){
+  const{data}=await sb.from('active_brews').select('*').eq('dismissed',false).order('created_at');
+  const sec=document.getElementById('brewsSec');
+  const row=document.getElementById('activeBrewsRow');
+  if(!data||!data.length){sec.style.display='none';return;}
+  sec.style.display='block';
+  row.innerHTML=data.map(b=>`
+    <div class="brew-badge ${b.is_curse?'curse':'boost'}">
+      ${b.brew_icon} <strong>${b.brew_name}</strong>: ${b.brew_effect}
+      <span style="color:var(--text-d);font-size:10px"> · ${b.buyer_name}</span>
+    </div>`).join('');
+}
+
+// ── MAP QUEUE ──
+async function loadMapQueue(){
+  const{data}=await sb.from('map_queue').select('*').eq('played',false).order('created_at');
+  const sec=document.getElementById('mapSec');
+  const body=document.getElementById('mapQueueBody');
+  if(!data||!data.length){sec.style.display='none';return;}
+  sec.style.display='block';
+  body.innerHTML=data.map(m=>`
+    <div class="map-row">
+      <span class="map-name">${m.map_name}</span>
+      <span class="map-game">${m.game==='phasmo'?'Phasmo':'Demon'}</span>
+      <span class="map-buyer">by ${m.buyer_name}</span>
+    </div>`).join('');
+}
+
+// ── BREW SHOP ──
+function renderBrewShop(){
+  const g=session.active_game||'none';
+  const isHorror=g==='phasmo'||g==='demon';
+  const content=document.getElementById('brewShopContent');
+
+  // Filter visible brews
+  const visibleCurses=BREWS.filter(b=>b.curse).filter(b=>{
+    if(!b.horrorOnly)return true;
+    if(!isHorror)return false;
+    if(b.mapGame)return b.mapGame===g;
+    return true;
+  }).sort((a,b)=>a.cost-b.cost);
+
+  const visibleBoosts=BREWS.filter(b=>!b.curse).sort((a,b)=>a.cost-b.cost);
+
+  const renderCard=(brew)=>{
+    const maps=brew.mapGame==='phasmo'?gameMaps.phasmo:brew.mapGame==='demon'?gameMaps.demon:[];
+    const pool=brew.key==='pick_event'?getCardPool(session.active_game||'none'):[];
+    return`<div class="brew-card">
+      <div class="brew-name"><span class="brew-ico">${brew.ico}</span>${brew.name}</div>
+      <div class="brew-desc">${brew.desc}</div>
+      <div class="brew-effect ${brew.curse?'curse':'boost'}">${brew.curse?'😈':'✨'} ${brew.effect}</div>
+      <div class="brew-cost">${brew.cost} 🦊</div>
+      ${brew.mapGame?`<select class="map-sel" id="map-sel-${brew.key}">${maps.map(m=>`<option>${m}</option>`).join('')}</select>`:''}
+      ${brew.key==='pick_event'?`<select class="map-sel" id="event-sel-pick_event"><option value="">— Choose an event —</option>${pool.map(e=>`<option value="${e}">${e}</option>`).join('')}</select>`:''}
+      <button class="brew-buy-btn" onclick="buyBrew('${brew.key}')" ${!playerData?'disabled':''}>
+        ${!playerData?'Join to purchase':'Buy'}
+      </button>
+    </div>`;
+  };
+
+  let html='';
+  if(visibleCurses.length){
+    html+=`<div class="brew-section-label curses">😈 CURSES</div>`;
+    html+=`<div class="brew-grid">${visibleCurses.map(renderCard).join('')}</div>`;
+  }
+  if(visibleBoosts.length){
+    html+=`<div class="brew-section-label boosts">✨ BOONS</div>`;
+    html+=`<div class="brew-grid">${visibleBoosts.map(renderCard).join('')}</div>`;
+  }
+  content.innerHTML=html||'<div class="text-d">No brews available right now.</div>';
+}
+
+async function buyBrew(brewKey){
+  if(!playerData){toast('Join the Den first!','err');return;}
+  const brew=BREWS.find(b=>b.key===brewKey);
+  if(!brew)return;
+  if(playerData.tails<brew.cost){toast(`Need ${brew.cost}🦊, you have ${playerData.tails}🦊`,'err');return;}
+  const g=session.active_game||'none';
+  if(brew.horrorOnly&&g!=='phasmo'&&g!=='demon'){toast('Only available during horror games!','err');return;}
+
+  let tailsDelta=-brew.cost;
+
+  if(brew.key==='fox_blend'){await upd('viewers',{id:playerData.id},{double_bet:true,tails:playerData.tails+tailsDelta});}
+  else if(brew.key==='lucky_roast'){await upd('viewers',{id:playerData.id},{shielded:true,tails:playerData.tails+tailsDelta});}
+  else if(brew.key==='lucky_paw'){await upd('viewers',{id:playerData.id},{lucky_paw:true,tails:playerData.tails+tailsDelta});}
+  else if(brew.key==='treasure_chest'){
+    const reward=Math.floor(Math.random()*46)+5;
+    await upd('viewers',{id:playerData.id},{tails:playerData.tails+tailsDelta+reward});
+    toast(`📦 Devlyn's chest revealed: +${reward}🦊!`,'ok');
+  }
+  else if(brew.key==='new_cards'){
+    await upd('viewers',{id:playerData.id},{tails:playerData.tails+tailsDelta});
+    const toSwap=playerCards.filter(c=>!c.completed).slice(0,3);
+    const current=playerCards.map(c=>c.event_text);
+    const pool=getCardPool(g);
+    for(const card of toSwap){
+      const avail=pool.filter(e=>!current.includes(e));
+      if(!avail.length)break;
+      const newEv=avail[Math.floor(Math.random()*avail.length)];
+      current[current.indexOf(card.event_text)]=newEv;
+      await upd('cards',{id:card.id},{event_text:newEv,completed:false});
+    }
+    toast('Cards refreshed! 🃏','ok');
+  }
+  else if(brew.key==='random_event'){
+    const pool=getCardPool(g);
+    if(!pool.length){toast('No events available!','err');return;}
+    const ev=pool[Math.floor(Math.random()*pool.length)];
+    await upd('viewers',{id:playerData.id},{tails:playerData.tails+tailsDelta});
+    await fireEventFromBrew(ev,playerData.username);
+    toast(`🎴 Random event fired: "${ev}"!`,'ok');
+  }
+  else if(brew.key==='pick_event'){
+    const sel=document.getElementById('event-sel-pick_event');
+    const ev=sel?sel.value:'';
+    if(!ev){toast('Pick an event first!','err');return;}
+    await upd('viewers',{id:playerData.id},{tails:playerData.tails+tailsDelta});
+    await fireEventFromBrew(ev,playerData.username);
+    toast(`✨ Event triggered: "${ev}"!`,'ok');
+  }
+  else if(brew.mapGame){
+    const sel=document.getElementById('map-sel-'+brew.key);
+    const mapName=sel?sel.value:'';
+    if(!mapName){toast('Select a map!','err');return;}
+    await ins('map_queue',{map_name:mapName,game:brew.mapGame,buyer_name:playerData.username,played:false});
+    await upd('viewers',{id:playerData.id},{tails:playerData.tails+tailsDelta});
+    await loadMapQueue();
+    toast(`Map queued: ${mapName}! 🗺️`,'ok');
+  }
+  else{
+    await upd('viewers',{id:playerData.id},{tails:playerData.tails+tailsDelta});
+  }
+
+  if(brew.curse&&!brew.mapGame){
+    await ins('active_brews',{brew_key:brew.key,brew_name:brew.name,brew_icon:brew.ico,brew_effect:brew.effect,is_curse:true,buyer_name:playerData.username,dismissed:false});
+    await loadActiveBrews();
+  }
+
+  if(brew.key!=='treasure_chest'&&brew.key!=='new_cards'&&brew.key!=='random_event'&&brew.key!=='pick_event'&&!brew.mapGame)toast(`Purchased: ${brew.name}! 🦊`,'ok');
+  await loadPlayer();
+}
+
+// ── BREW EVENT TRIGGER ──
+async function fireEventFromBrew(eventText, buyerName){
+  // Award tails to all viewers who have this event as an incomplete card
+  const{data:cards}=await sb.from('cards').select('*').eq('event_text',eventText).eq('completed',false);
+  if(!cards||!cards.length){
+    toast(`No one has "${eventText}" on their card!`,'');
+    await ins('event_log',{entry_text:`${buyerName} triggered "${eventText}" via brew — no card matches`,log_class:'event'});
+    return;
+  }
+  for(const card of cards){
+    await upd('cards',{id:card.id},{completed:true,completed_at:new Date().toISOString()});
+    const{data:vs}=await sb.from('viewers').select('*').eq('id',card.viewer_id);
+    if(!vs||!vs.length)continue;
+    const v=vs[0];
+    let earn=SETTINGS.cardReward;
+    if(v.double_bet){earn*=2;await upd('viewers',{id:v.id},{double_bet:false});}
+    let bonus=0;
+    if(v.lucky_paw){bonus=15;await upd('viewers',{id:v.id},{lucky_paw:false});}
+    await upd('viewers',{id:v.id},{tails:(v.tails||0)+earn+bonus});
+  }
+  await ins('event_log',{entry_text:`${buyerName} triggered "${eventText}" via brew (${cards.length} match${cards.length===1?'':'es'})`,log_class:'event'});
+  await loadPlayer();
+  await loadLeaderboard();
+  // Check if buyer's own card was matched
+  if(playerData)await checkCardMatch(eventText);
+}
+
+// ── REALTIME ──
+function subscribeRealtime(){
+  sb.channel('foxden-chat-v2')
+    .on('postgres_changes',{event:'*',schema:'public',table:'session'},async()=>{await loadSession();})
+    .on('postgres_changes',{event:'*',schema:'public',table:'wager'},async()=>{await loadActiveWager();})
+    .on('postgres_changes',{event:'*',schema:'public',table:'wager_bets'},async()=>{await loadActiveWager();})
+    .on('postgres_changes',{event:'*',schema:'public',table:'viewers'},async()=>{if(playerData)await loadPlayer();await loadLeaderboard();})
+    .on('postgres_changes',{event:'*',schema:'public',table:'cards'},async()=>{if(playerData)await loadPlayer();})
+    .on('postgres_changes',{event:'*',schema:'public',table:'active_brews'},async()=>{await loadActiveBrews();})
+    .on('postgres_changes',{event:'*',schema:'public',table:'map_queue'},async()=>{await loadMapQueue();})
+    .on('postgres_changes',{event:'*',schema:'public',table:'event_log'},async(payload)=>{
+      if(payload.new&&payload.new.log_class==='event'){await checkCardMatch(payload.new.entry_text);}
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'game_events'},async()=>{await loadReferenceData();})
+    .on('postgres_changes',{event:'*',schema:'public',table:'game_maps'},async()=>{await loadReferenceData();renderBrewShop();})
+    .on('postgres_changes',{event:'*',schema:'public',table:'game_ghosts'},async()=>{await loadReferenceData();})
+    .subscribe();
+}
+
+// ── UI ──
+function toggleSec(id){document.getElementById(id).classList.toggle('col');}
+function toast(msg,type=''){
+  const c=document.getElementById('toast');
+  const t=document.createElement('div');
+  t.className='toast '+(type||'');
+  t.textContent=msg;
+  c.appendChild(t);
+  setTimeout(()=>t.remove(),3200);
+}
+</script>
+</body>
+</html>
