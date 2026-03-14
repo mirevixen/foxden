@@ -717,6 +717,23 @@ function renderBrewShop(){
   content.innerHTML=html||'<div class="text-d">No brews available right now.</div>';
 }
 
+async function fireAlert(type, data){
+  try {
+    await sb.from('alerts').insert({
+      alert_type: type,
+      title: data.title,
+      message: data.message || null,
+      icon: data.icon || null,
+      style: data.style || 'boost',
+      shown: false,
+      brew_key: data.brew_key || null,
+      buyer: data.buyer || null,
+      cost: data.cost || null,
+      effect: data.effect || null,
+    });
+  } catch(e) { console.warn('Alert insert failed', e); }
+}
+
 async function buyBrew(brewKey){
   if(!playerData){toast('Join the Den first!','err');return;}
   const brew=BREWS.find(b=>b.key===brewKey);
@@ -782,6 +799,18 @@ async function buyBrew(brewKey){
     await ins('active_brews',{brew_key:brew.key,brew_name:brew.name,brew_icon:brew.ico,brew_effect:brew.effect,is_curse:true,buyer_name:playerData.username,dismissed:false});
     await loadActiveBrews();
   }
+
+  // Fire OBS alert
+  await fireAlert('brew', {
+    title: brew.name,
+    message: brew.desc,
+    icon: brew.ico,
+    style: brew.curse ? 'curse' : 'boost',
+    brew_key: brew.key,
+    buyer: playerData.username,
+    cost: brew.cost,
+    effect: brew.effect,
+  });
 
   if(brew.key!=='treasure_chest'&&brew.key!=='new_cards'&&brew.key!=='random_event'&&brew.key!=='pick_event'&&!brew.mapGame)toast(`Purchased: ${brew.name}! 🦊`,'ok');
   await loadPlayer();
