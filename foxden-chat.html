@@ -104,9 +104,9 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .bet-no:hover{background:rgba(143,42,42,0.25)}
 .bet-ghost{background:rgba(143,95,207,0.1);border-color:#8f5fcf;color:#c9a0f5}
 .bet-ghost:hover{background:rgba(143,95,207,0.25)}
-.my-bet{text-align:center;font-style:italic;color:var(--text-d);font-size:15px;margin-top:6px}
+.my-bet{text-align:center;font-style:italic;color:var(--text-d);font-size:16px;margin-top:8px;padding:7px;background:rgba(200,131,42,0.07);border-radius:2px;border:1px solid rgba(200,131,42,0.15)}
 .my-bet strong{color:var(--amber-b)}
-.wager-closed{text-align:center;color:var(--text-d);font-style:italic;padding:8px}
+.wager-closed{text-align:center;color:var(--text-d);font-style:italic;padding:8px;font-size:15px;line-height:1.5}
 .wager-resolved{text-align:center;padding:8px}
 .wager-outcome{font-family:'Cinzel Decorative',serif;font-size:13px;color:var(--gold);letter-spacing:1px}
 .bettors-mini{margin-top:8px;max-height:90px;overflow-y:auto}
@@ -548,7 +548,19 @@ async function checkCardMatch(eventText){
 async function loadActiveWager(){
   try{
     const{data,error}=await sb.from('wager').select('*').eq('resolved',false).order('created_at',{ascending:false}).limit(1);
-    if(error||!data||!data.length){activeWager=null;renderWager();return;}
+    if(error||!data||!data.length){
+      // Check for recently resolved wager to show outcome briefly
+      const{data:resolved}=await sb.from('wager').select('*').eq('resolved',true).order('created_at',{ascending:false}).limit(1);
+      if(resolved&&resolved.length&&resolved[0].outcome!=='cancelled'){
+        const age=(Date.now()-new Date(resolved[0].updated_at||resolved[0].created_at))/1000;
+        if(age<30){ // show resolved wager for 30s after resolution
+          activeWager=resolved[0];
+          activeWager.bets=await qry('wager_bets',{wager_id:activeWager.id})||[];
+          renderWager();return;
+        }
+      }
+      activeWager=null;renderWager();return;
+    }
     activeWager=data[0];
     const bets=await qry('wager_bets',{wager_id:activeWager.id});
     activeWager.bets=bets||[];
@@ -558,7 +570,7 @@ async function loadActiveWager(){
 }
 
 function startWagerTimer(){
-  if(wagerTimer)clearInterval(wagerTimer);
+  if(wagerTimer)return; // already running — don't reset
   wagerTimeLeft=60;
   wagerTimer=setInterval(()=>{
     wagerTimeLeft--;
@@ -602,8 +614,8 @@ function renderWager(){
             ${isGhost?`<button class="bet-ghost" onclick="placeBet()">👻 Bet on Ghost</button>`:`<button class="bet-yes" onclick="placeBet('Yes')">✔ YES</button><button class="bet-no" onclick="placeBet('No')">✖ NO</button>`}
           </div>
         </div>`:''}
-      ${myBet?`<div class="my-bet">Your bet: <strong>${myBet.side}</strong> for <strong>${myBet.amount}🦊</strong></div>`:''}
-      ${!w.open&&!w.resolved?'<div class="wager-closed">🔒 Betting closed. Awaiting outcome…</div>':''}
+      ${myBet?`<div class="my-bet">🎲 Your bet: <strong>${myBet.side}</strong> for <strong>${myBet.amount}🦊</strong></div>`:''}
+      ${!w.open&&!w.resolved?`<div class="wager-closed">🔒 Betting closed. Awaiting outcome…${myBet?` (You bet <strong>${myBet.side}</strong> for <strong>${myBet.amount}🦊</strong>)`:''}</div>`:''}
       ${w.resolved?`<div class="wager-resolved"><div class="wager-outcome">Outcome: ${w.outcome}</div>${myBet&&myBet.side===w.outcome?'<div style="color:var(--gold);margin-top:4px">🏆 You won!</div>':myBet?'<div style="color:#f08080;margin-top:4px">You lost this one.</div>':''}</div>`:''}
       <div class="bettors-mini">${(w.bets||[]).slice(-5).map(b=>{const sc=b.side==='Yes'?'var(--teal-b)':b.side==='No'?'#f08080':'#c9a0f5';return`<div class="bettor-row"><span>${b.viewer_name||'?'}</span><span style="color:${sc}">${b.side}</span><span style="color:var(--amber)">${b.amount}🦊</span></div>`;}).join('')}</div>
     </div>`;
@@ -614,7 +626,8 @@ function setAmt(n){const el=document.getElementById('betAmt');if(el)el.value=n;}
 
 async function placeBet(side){
   if(!playerData){toast('Join the Den first!','err');return;}
-  if(!activeWager||!activeWager.open){toast('Wager is not open!','err');return;}
+  if(!activeWager){toast('No active wager!','err');return;}
+  if(!activeWager.open){toast('Betting is closed!','err');return;}
   const amount=parseInt(document.getElementById('betAmt')?.value)||0;
   if(amount<=0){toast('Enter a valid amount','err');return;}
   if(amount>playerData.tails){toast(`Not enough Fox Tails! You have ${playerData.tails}🦊`,'err');return;}
@@ -622,10 +635,26 @@ async function placeBet(side){
     side=document.getElementById('ghostPick')?.value;
     if(!side){toast('Pick a ghost!','err');return;}
   }
-  const existing=await qry('wager_bets',{wager_id:activeWager.id,viewer_id:playerData.id});
-  if(existing.length){toast('You already placed a bet!','err');return;}
-  await ins('wager_bets',{wager_id:activeWager.id,viewer_id:playerData.id,viewer_name:playerData.username,side,amount});
-  await upd('viewers',{id:playerData.id},{tails:playerData.tails-amount,bets:(playerData.bets||0)+1});
+  // Check for existing bet
+  const{data:existing,error:existErr}=await sb.from('wager_bets')
+    .select('id').eq('wager_id',activeWager.id).eq('viewer_id',playerData.id);
+  if(existErr){toast('Error checking bet: '+existErr.message,'err');return;}
+  if(existing&&existing.length){toast('You already placed a bet!','err');return;}
+  // Insert the bet
+  const{data:betData,error:betErr}=await sb.from('wager_bets').insert({
+    wager_id:activeWager.id,
+    viewer_id:playerData.id,
+    viewer_name:playerData.username,
+    side,
+    amount
+  }).select().single();
+  if(betErr){toast('Bet failed: '+betErr.message,'err');console.error('wager_bets insert error:',betErr);return;}
+  // Deduct tails
+  const{error:tailErr}=await sb.from('viewers').update({
+    tails:playerData.tails-amount,
+    bets:(playerData.bets||0)+1
+  }).eq('id',playerData.id);
+  if(tailErr){console.error('tails deduct error:',tailErr);}
   toast(`Bet placed: ${side} for ${amount}🦊`,'ok');
   await loadPlayer();
   await loadActiveWager();
